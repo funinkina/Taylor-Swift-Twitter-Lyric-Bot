@@ -34,12 +34,9 @@ response = requests.get(endpoint, params=params)
 
 if response.status_code == 200:
     data = response.json()
-    # print(data['message']['header']['status_code'])
     if data['message']['header']['status_code'] == 200:
         random_song = randomgen()[1]
         track_id = data['message']['body']['track_list'][random_song]['track']['track_id']  # noqa: E501
-        # print(data['message']['body']['track_list'][random_song]['track']['track_id'])  # noqa: E501
-        # print(data['message']['body']['track_list'][random_song]['track']['track_name'], "\n")  # noqa: E501
         lyricsendpoint = 'https://api.musixmatch.com/ws/1.1/track.lyrics.get'  # noqa: E501
         lyricsparams = {
             'track_id': track_id,
