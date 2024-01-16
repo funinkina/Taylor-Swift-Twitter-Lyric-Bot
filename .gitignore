@@ -1,5 +1,7 @@
 # .gitignore
 
 bearer.txt
+tempCodeRunnerFile.py
+main_old.py
 .env
 .gitignore
