@@ -1,61 +1,39 @@
-import os
-import tweepy
+from bs4 import BeautifulSoup as bs
 import requests
 import random
+import tweepy
+import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-api_key = os.environ.get('MUSIXMATCH_API_KEY')
+artist_link = 'https://www.azlyrics.com/t/taylorswift.html'
 
-endpoint = 'https://api.musixmatch.com/ws/1.1/track.search'
+song_list = requests.get(artist_link)
+if song_list.status_code != 200:
+    print(f"Error: {song_list.status_code}")
+    exit()
 
+soup = bs(song_list.text, 'lxml')
+songs = soup.find_all('div', class_='listalbum-item')
+song_list = []
+for song in songs:
+    link = song.find('a')['href']
+    song_list.append(link)
 
-def randomgen():
-    random_page = random.randint(0, 5)
-    if random_page < 5:
-        random_song = random.randint(0, 99)
-    else:
-        random_song = random.randint(0, 55)
-    return [random_page, random_song]
+lyric_link = "https://azlyrics.com"+random.choice(song_list)
+lyric_page = requests.get(lyric_link)
+soup = bs(lyric_page.text, 'lxml')
 
+title = soup.find('title').text.removesuffix(" Lyrics | AZLyrics.com").removeprefix("Taylor Swift ")  # noqa: E501
+body = soup.find('div', class_='col-xs-12 col-lg-8 text-center')
+lyrics = body.find_all('div')[5].text.split("\n\n")
 
-params = {
-    'f_artist_id': 259675,
-    'f_has_lyrics': 1,
-    'f_is_instrumental': 0,
-    'apikey': api_key,
-    'format': 'json',
-    'page_size': 100,
-    'page': randomgen()[0]
-}
+para = random.choice(lyrics).strip().split("\n")
+line = [para[i] + '\n' + para[i + 1] if i + 1 < len(para) else para[i] for i in range(0, len(para), 2)]  # noqa: E501
 
-response = requests.get(endpoint, params=params)
-
-if response.status_code == 200:
-    data = response.json()
-    if data['message']['header']['status_code'] == 200:
-        random_song = randomgen()[1]
-        track_id = data['message']['body']['track_list'][random_song]['track']['track_id']  # noqa: E501
-        lyricsendpoint = 'https://api.musixmatch.com/ws/1.1/track.lyrics.get'  # noqa: E501
-        lyricsparams = {
-            'track_id': track_id,
-            'apikey': api_key,
-            'format': 'json',
-        }
-        lyrics_response = requests.get(lyricsendpoint, params=lyricsparams)  # noqa: E501
-        lyrics = lyrics_response.json()
-        lyrics_body = lyrics['message']['body']['lyrics']['lyrics_body']
-        lyrics_list = lyrics_body.splitlines()
-        lyrics_list = [string for string in lyrics_list if string != '']
-        lyrics_list = lyrics_list[:-3]
-        random_lyric = lyrics_list[random.randint(0, len(lyrics_list)-1)]
-        print(random_lyric)
-    elif data['message']['header']['status_code'] == 401:
-        print("API ERROR!")
-else:
-    print(f"Error: {response.status_code}")
-
+text = random.choice(line) + "\n\t" + title
+print(text)
 
 client = tweepy.Client(
     consumer_key=os.environ.get('TWITTER_CONSUMER_KEY'),
@@ -65,7 +43,7 @@ client = tweepy.Client(
 )
 
 response = client.create_tweet(
-    text=random_lyric
+    text=text
 )
 
 print(f"https://twitter.com/user/status/{response.data['id']}")

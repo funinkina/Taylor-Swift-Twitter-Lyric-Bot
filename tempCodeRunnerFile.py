@@ -1,0 +1,1 @@
+soup.findAll('div', class_='col-xs-12 col-lg-8 text-center')
